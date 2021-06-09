@@ -1,6 +1,10 @@
 from .extensions import mongo, bcrypt
 from flask import Blueprint, request, jsonify, make_response
-from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
+from flask_jwt_extended import create_access_token, \
+    get_jwt_identity, \
+    jwt_required, \
+    set_access_cookies, \
+    unset_jwt_cookies
 import requests as req
 
 
@@ -17,11 +21,22 @@ def create_token(username):
         return make_response({'message': 'User Not Found'}, 404)
     # create the token if exits
     access_token = create_access_token(identity=user_request)
-    return jsonify(access_token=access_token)
+    # cookies
+    response = jsonify({'message': 'login successful'})
+    set_access_cookies(response, access_token)
+    # return jsonify(access_token=access_token)
+    return response
 
 
-@token_api.route("/protected", methods=["GET"])
-@jwt_required()
+@token_api.route("/logout", methods=['POST'])
+def logout():
+    response = jsonify({"message": "logout successful"})
+    unset_jwt_cookies(response)
+    return response
+
+
+@token_api.route("/protected", methods=["GET", "POST"])
+@jwt_required(locations=['cookies'])  # only cookies
 def protected():
     # Access the identity of the current user with get_jwt_identity
     current_user = get_jwt_identity()
